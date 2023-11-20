@@ -3,6 +3,7 @@ from http import HTTPStatus
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.constants import INVESTED_AMOUNT
 from app.models.charity_project import CharityProject
 from app.schemas.charity_project import CharityProjectUpdate
 
@@ -56,7 +57,7 @@ async def validate_charity_project_delete(
         charity_project: CharityProject,
 ):
     """Валидация удаления проекта."""
-    if charity_project.invested_amount > 0:
+    if charity_project.invested_amount > INVESTED_AMOUNT:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
             detail='В проект были внесены средства, не подлежит удалению!'

@@ -3,15 +3,16 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.base import CRUDBase
-from app.crud.validators import check_charity_project_name_duplicate
+from app.crud.validators import (check_charity_project_name_duplicate,
+                                 validate_charity_project_delete,
+                                 validate_charity_project_exists,
+                                 validate_charity_project_update)
 from app.models.charity_project import CharityProject
 from app.schemas.charity_project import (CharityProjectCreate,
                                          CharityProjectUpdate)
 from app.services.google_api import (set_user_permissions, spreadsheets_create,
                                      spreadsheets_update_value)
 from app.services.investment import investment
-from app.services.utils import (get_charity_project, get_project_to_delete,
-                                get_project_to_update)
 
 
 class CRUDCharityProject(CRUDBase):
@@ -35,15 +36,12 @@ class CRUDCharityProject(CRUDBase):
         obj_in: CharityProjectUpdate,
         session: AsyncSession
     ):
-        """Обновление проекта."""
-        await get_project_to_update(charity_project_id, obj_in, session)
+        """Частичное обновление проекта."""
+        project = await self.get(charity_project_id, session)
+        await validate_charity_project_update(project, obj_in)
         if obj_in.name is not None:
             await check_charity_project_name_duplicate(obj_in.name, session)
-        return await self.update(
-            await get_charity_project(charity_project_id, session),
-            obj_in,
-            session
-        )
+        return await self.update(project, obj_in, session)
 
     async def get_all_projects(self, session: AsyncSession):
         """Получение всех проектов (Доступно всем)."""
@@ -55,11 +53,9 @@ class CRUDCharityProject(CRUDBase):
         session: AsyncSession
     ):
         """Удаление проекта (Только для суперюзеров)."""
-        await get_project_to_delete(charity_project_id, session)
-        return await self.remove(
-            await get_charity_project(charity_project_id, session),
-            session
-        )
+        charity_project = await self.get(charity_project_id, session)
+        await validate_charity_project_delete(charity_project)
+        return await self.remove(charity_project, session)
 
     async def get_project_id_by_name(
         self,
@@ -70,7 +66,8 @@ class CRUDCharityProject(CRUDBase):
         db_project_id = await session.execute(
             select(self.model.id).where(self.model.name == project_name)
         )
-        return db_project_id.scalars().first()
+        await validate_charity_project_exists(db_project_id)
+        return db_project_id.first()
 
     async def get_projects_by_completion_rate(
         self,
