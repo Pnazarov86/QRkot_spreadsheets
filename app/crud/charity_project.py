@@ -53,9 +53,9 @@ class CRUDCharityProject(CRUDBase):
         session: AsyncSession
     ):
         """Удаление проекта (Только для суперюзеров)."""
-        charity_project = await self.get(charity_project_id, session)
-        await validate_charity_project_delete(charity_project)
-        return await self.remove(charity_project, session)
+        project = await self.get(charity_project_id, session)
+        await validate_charity_project_delete(project)
+        return await self.remove(project, session)
 
     async def get_project_id_by_name(
         self,
@@ -63,11 +63,11 @@ class CRUDCharityProject(CRUDBase):
         session: AsyncSession
     ):
         """Получение проекта по имени."""
-        db_project_id = await session.execute(
+        project_id = await session.execute(
             select(self.model.id).where(self.model.name == project_name)
         )
-        await validate_charity_project_exists(db_project_id)
-        return db_project_id.first()
+        await validate_charity_project_exists(project_id)
+        return project_id.first()
 
     async def get_projects_by_completion_rate(
         self,
