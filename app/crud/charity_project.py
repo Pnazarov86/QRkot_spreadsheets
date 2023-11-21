@@ -43,10 +43,6 @@ class CRUDCharityProject(CRUDBase):
             await check_charity_project_name_duplicate(obj_in.name, session)
         return await self.update(project, obj_in, session)
 
-    async def get_all_projects(self, session: AsyncSession):
-        """Получение всех проектов (Доступно всем)."""
-        return await self.get_multi(session)
-
     async def delete_project(
         self,
         charity_project_id: int,
@@ -56,6 +52,10 @@ class CRUDCharityProject(CRUDBase):
         project = await self.get(charity_project_id, session)
         await validate_charity_project_delete(project)
         return await self.remove(project, session)
+
+    async def get_all_projects(self, session: AsyncSession):
+        """Получение всех проектов (Доступно всем)."""
+        return await self.get_multi(session)
 
     async def get_project_id_by_name(
         self,
